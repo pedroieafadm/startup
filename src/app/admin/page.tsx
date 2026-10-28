@@ -8,13 +8,18 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const { erro } = await searchParams;
   const profile = await requireRole("school_admin");
   const supabase = await createClient();
-  const { data: scores } = await supabase
-    .from("class_scores")
-    .select("class_id, class_name, year_points, month_points")
-    .eq("school_id", profile.school_id!);
+  const [{ data: scores }, { count: pending }] = await Promise.all([
+    supabase.from("class_scores").select("class_id, class_name, year_points, month_points").eq("school_id", profile.school_id!),
+    supabase.from("submissions").select("id", { count: "exact", head: true }).eq("status", "pending"),
+  ]);
 
   return (
     <SchoolShell profile={profile} title="Painel da escola">
+      <Link href="/admin/fila" className="flex items-center justify-between rounded-xl bg-brand px-4 py-3 text-white shadow-sm">
+        <span className="font-semibold">Fotos para avaliar</span>
+        <span className="rounded-full bg-white px-3 py-0.5 text-sm font-bold text-brand">{pending ?? 0}</span>
+      </Link>
+
       <Card title="Ranking do ano">
         <Ranking rows={scores ?? []} />
       </Card>
