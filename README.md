@@ -13,14 +13,15 @@ A especificação do MVP fica no documento do projeto. Já está pronto o ciclo 
 - **Painel da escola** (`/admin`): ranking do ano com destaque do mês, contador de fotos pendentes e turmas.
 - **Fila de avaliação** (`/admin/fila`): foto, turma e tarefa, comentário opcional e os botões ganhar, perder ou descartar.
 - **Turma no painel** (`/admin/turmas/...`): extrato com fotos, lançamento de pontos sem foto e estorno com motivo.
-- **Aluno** (`/aluno`): ranking com a própria turma em destaque, envio de foto pela câmera, últimos envios da turma, extrato e a área da IA "em breve" com o botão "tenho interesse".
+- **IA tutora** (`/aluno/ia`, `supabase/migrations/0004_ia_tutora.sql`): chat por texto e por voz (microfone e fala do próprio navegador, em português). Ela guia o aluno até a resposta em vez de entregar pronta, fica só em assuntos de estudo, segue regras de proteção para menores e indica ajuda (CVV 188) em situação de risco. Cada escola tem um limite de perguntas por aluno por dia (padrão 30, coluna `ai_daily_limit`) e pode desligar a IA (`ai_enabled`). O responsável da escola consegue ler as conversas. Usa a API da Anthropic (modelo Claude Opus 5.5, com modelo reserva automático se o principal recusar um pedido). Sem a chave `ANTHROPIC_API_KEY`, a tela mostra "ainda não foi ligada".
+- **Aluno** (`/aluno`): ranking com a própria turma em destaque, envio de foto pela câmera, últimos envios da turma e extrato.
 
 ## Como rodar
 
 1. Crie um projeto gratuito em [supabase.com](https://supabase.com).
-2. No Supabase, abra **SQL Editor** e rode, em ordem, os arquivos de `supabase/migrations/` (0001, 0002, 0003).
+2. No Supabase, abra **SQL Editor** e rode, em ordem, os arquivos de `supabase/migrations/` (0001, 0002, 0003, 0004).
 3. Em **Authentication > Providers > Email**, desligue "Confirm email" durante os testes (opcional).
-4. Copie `.env.example` para `.env.local` e preencha a URL e a chave anon (Project Settings > API).
+4. Copie `.env.example` para `.env.local` e preencha a URL e a chave anon (Project Settings > API). Para ligar a IA, coloque também a `ANTHROPIC_API_KEY` (conta paga em platform.claude.com).
 5. Rode:
    ```bash
    npm install

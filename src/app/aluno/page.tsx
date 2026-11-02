@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { Card, Ranking, SchoolShell, buttonClass } from "@/components/ui";
+import { Card, Ranking, SchoolShell } from "@/components/ui";
 import { requireRole } from "@/lib/auth";
 import { formatDate } from "@/lib/extrato";
 import { createClient } from "@/lib/supabase/server";
-import { registerAiInterest } from "./actions";
 
 const STATUS_LABEL = {
   pending: "Aguardando avaliação",
@@ -16,7 +15,7 @@ export default async function AlunoPage({ searchParams }: { searchParams: Promis
   const { enviado } = await searchParams;
   const profile = await requireRole("student");
   const supabase = await createClient();
-  const [{ data: scores }, { data: tasks }, { data: submissions }, { data: interest }] = await Promise.all([
+  const [{ data: scores }, { data: tasks }, { data: submissions }] = await Promise.all([
     supabase.from("class_scores").select("class_id, class_name, year_points, month_points").eq("school_id", profile.school_id!),
     supabase.from("tasks").select("id, name, points_gain").eq("active", true).eq("requires_photo", true).order("name"),
     supabase
@@ -25,7 +24,6 @@ export default async function AlunoPage({ searchParams }: { searchParams: Promis
       .eq("class_id", profile.class_id!)
       .order("created_at", { ascending: false })
       .limit(5),
-    supabase.from("ai_interest").select("student_id").eq("student_id", profile.id).maybeSingle(),
   ]);
 
   return (
@@ -69,18 +67,10 @@ export default async function AlunoPage({ searchParams }: { searchParams: Promis
         </ul>
       </Card>
 
-      <Card title="IA tutora (em breve)">
-        <p className="mb-3 text-sm text-slate-600">
-          Uma IA da própria escola para tirar dúvidas e estudar, explicando o raciocínio em vez de entregar a resposta pronta.
-        </p>
-        {interest ? (
-          <p className="text-sm font-medium text-brand">Anotado! Você vai saber quando ela chegar.</p>
-        ) : (
-          <form action={registerAiInterest}>
-            <button className={buttonClass}>Tenho interesse</button>
-          </form>
-        )}
-      </Card>
+      <Link href="/aluno/ia" className="block rounded-xl bg-brand p-4 text-white shadow-sm hover:opacity-95">
+        <p className="font-semibold">IA tutora</p>
+        <p className="text-sm opacity-90">Tire dúvidas por texto ou por voz. Ela te guia até a resposta, sem entregar pronta.</p>
+      </Link>
     </SchoolShell>
   );
 }
