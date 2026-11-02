@@ -4,7 +4,7 @@ import { BackLink, Card, ErrorText, SchoolShell, buttonClass, inputClass } from 
 import { requireRole } from "@/lib/auth";
 import { loadExtrato } from "@/lib/extrato";
 import { createClient } from "@/lib/supabase/server";
-import { addManualEntry, deleteInvite, inviteStudents, reverseEntry } from "../../actions";
+import { addManualEntry, moveStudent, regenerateClassCode, reverseEntry } from "../../actions";
 
 export default async function TurmaPage({ params, searchParams }: {
   params: Promise<{ id: string }>;
@@ -15,12 +15,12 @@ export default async function TurmaPage({ params, searchParams }: {
   const profile = await requireRole("school_admin");
   const supabase = await createClient();
 
-  const { data: turma } = await supabase.from("classes").select("id, name").eq("id", id).single();
+  const { data: turma } = await supabase.from("classes").select("id, name, join_code").eq("id", id).single();
   if (!turma) notFound();
 
-  const [{ data: students }, { data: invites }, { data: tasks }, entries] = await Promise.all([
+  const [{ data: students }, { data: classes }, { data: tasks }, entries] = await Promise.all([
     supabase.from("profiles").select("id, full_name").eq("class_id", id).eq("role", "student").order("full_name"),
-    supabase.from("invites").select("code, full_name").eq("class_id", id).is("used_at", null).order("full_name"),
+    supabase.from("classes").select("id, name").neq("id", id).order("name"),
     supabase.from("tasks").select("id, name").eq("active", true).order("name"),
     loadExtrato(supabase, id),
   ]);
@@ -66,38 +66,36 @@ export default async function TurmaPage({ params, searchParams }: {
         />
       </Card>
 
-      <Card title={`Alunos com conta (${students?.length ?? 0})`}>
-        <ul className="divide-y divide-slate-100">
-          {students?.map((s) => <li key={s.id} className="py-2">{s.full_name}</li>)}
-          {!students?.length && <li className="py-2 text-sm text-slate-500">Nenhum aluno criou conta ainda.</li>}
-        </ul>
+      <Card title="Código da turma">
+        <p className="mb-3 text-sm text-slate-600">
+          Os alunos criam a conta em <strong>/cadastro</strong> com o e-mail institucional e este código, e entram direto nesta turma.
+        </p>
+        <div className="flex items-center justify-between gap-3">
+          <code className="rounded-lg bg-slate-100 px-4 py-2 font-mono text-2xl tracking-widest">{turma.join_code}</code>
+          <form action={regenerateClassCode.bind(null, id)}>
+            <button className="text-sm text-brand underline">Gerar novo código</button>
+          </form>
+        </div>
+        <p className="mt-2 text-xs text-slate-500">Gere um novo se o código vazar. Quem já tem conta continua na turma.</p>
       </Card>
 
-      <Card title="Convites pendentes">
-        <p className="mb-3 text-sm text-slate-600">
-          Entregue o código a cada aluno. Ele cria a conta em <strong>/cadastro</strong> e entra direto nesta turma.
-        </p>
+      <Card title={`Alunos (${students?.length ?? 0})`}>
         <ul className="divide-y divide-slate-100">
-          {invites?.map((inv) => (
-            <li key={inv.code} className="flex items-center justify-between py-2">
-              <span>{inv.full_name}</span>
-              <span className="flex items-center gap-3">
-                <code className="rounded bg-slate-100 px-2 py-1 font-mono">{inv.code}</code>
-                <form action={deleteInvite.bind(null, id, inv.code)}>
-                  <button className="text-sm text-red-600 underline">Excluir</button>
-                </form>
-              </span>
+          {students?.map((s) => (
+            <li key={s.id} className="flex items-center justify-between gap-3 py-2">
+              <span>{s.full_name}</span>
+              <form action={moveStudent.bind(null, id)} className="flex items-center gap-2">
+                <input type="hidden" name="student" value={s.id} />
+                <select name="target" required defaultValue="" className="rounded border border-slate-300 px-2 py-1 text-sm">
+                  <option value="" disabled>Mover para…</option>
+                  {classes?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <button className="text-sm text-brand underline">Mover</button>
+              </form>
             </li>
           ))}
-          {!invites?.length && <li className="py-2 text-sm text-slate-500">Nenhum convite pendente.</li>}
+          {!students?.length && <li className="py-2 text-sm text-slate-500">Nenhum aluno criou conta ainda.</li>}
         </ul>
-      </Card>
-
-      <Card title="Adicionar alunos">
-        <form action={inviteStudents.bind(null, id)} className="space-y-3">
-          <textarea name="names" required rows={5} placeholder={"Um nome por linha\nAna Souza\nBruno Lima"} className={inputClass} />
-          <button className={buttonClass}>Gerar convites</button>
-        </form>
       </Card>
     </SchoolShell>
   );

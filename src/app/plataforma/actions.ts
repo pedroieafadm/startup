@@ -18,6 +18,7 @@ export async function createSchool(formData: FormData) {
       name,
       slug,
       logo_url: String(formData.get("logo_url")).trim() || null,
+      email_domain: String(formData.get("email_domain")).trim().replace(/^@/, "").toLowerCase() || null,
       primary_color: String(formData.get("primary_color")),
       secondary_color: String(formData.get("secondary_color")),
     })

@@ -35,6 +35,7 @@ export default async function PlataformaPage({ searchParams }: { searchParams: P
           <ErrorText message={erro} />
           <input name="name" required placeholder="Nome da escola" className={inputClass} />
           <input name="slug" required placeholder="Identificador (ex.: colegio-exemplo)" className={inputClass} />
+          <input name="email_domain" placeholder="Domínio do e-mail dos alunos (ex.: colegio.edu.br)" className={inputClass} />
           <input name="logo_url" type="url" placeholder="Link da logo (opcional)" className={inputClass} />
           <div className="flex gap-4 text-sm">
             <label className="flex items-center gap-2">Cor principal <input name="primary_color" type="color" defaultValue="#0b2a5b" /></label>

@@ -15,26 +15,22 @@ export async function createClass(formData: FormData) {
   revalidatePath("/admin");
 }
 
-// Um nome por linha: facilita colar a lista de alunos de uma planilha.
-export async function inviteStudents(classId: string, formData: FormData) {
-  const profile = await requireRole("school_admin");
-  const names = String(formData.get("names"))
-    .split("\n")
-    .map((n) => n.trim())
-    .filter(Boolean);
-  if (names.length === 0) return;
+export async function regenerateClassCode(classId: string) {
+  await requireRole("school_admin");
   const supabase = await createClient();
-  const { error } = await supabase.from("invites").insert(
-    names.map((full_name) => ({ school_id: profile.school_id, class_id: classId, role: "student", full_name })),
-  );
-  if (error) redirect(`/admin/turmas/${classId}?erro=` + encodeURIComponent("Não foi possível gerar os convites."));
+  await supabase.rpc("regenerate_class_code", { p_class: classId });
   revalidatePath(`/admin/turmas/${classId}`);
 }
 
-export async function deleteInvite(classId: string, code: string) {
+// Corrige um aluno que entrou com o código de outra turma.
+export async function moveStudent(classId: string, formData: FormData) {
   await requireRole("school_admin");
   const supabase = await createClient();
-  await supabase.from("invites").delete().eq("code", code).is("used_at", null);
+  const { error } = await supabase.rpc("move_student", {
+    p_student: String(formData.get("student")),
+    p_class: String(formData.get("target")),
+  });
+  if (error) redirect(`/admin/turmas/${classId}?erro=` + encodeURIComponent(error.message));
   revalidatePath(`/admin/turmas/${classId}`);
 }
 
